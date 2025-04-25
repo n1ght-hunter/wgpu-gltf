@@ -13,7 +13,8 @@ tokio.workspace = true
 tracing = "0.1.41"
 tracing-subscriber = { version = "0.3.19", features = ["env-filter"] }
 # wgpu = "25.0.0"
-wgpu = { path = "../wgpu/wgpu" }
+wgpu = {git = "https://github.com/n1ght-hunter/wgpu.git", rev = "157c1c6"}
+# wgpu = { path = "../wgpu/wgpu" }
 winit.workspace = true
 
 

@@ -1197,6 +1197,7 @@ dependencies = [
 [[package]]
 name = "naga"
 version = "25.0.0"
+source = "git+https://github.com/n1ght-hunter/wgpu.git?rev=157c1c6#157c1c6aa58ae977c10ae1877e084e585a359ee4"
 dependencies = [
  "arrayvec",
  "bit-set 0.8.0",
@@ -2606,6 +2607,7 @@ dependencies = [
 [[package]]
 name = "wgpu"
 version = "25.0.0"
+source = "git+https://github.com/n1ght-hunter/wgpu.git?rev=157c1c6#157c1c6aa58ae977c10ae1877e084e585a359ee4"
 dependencies = [
  "arrayvec",
  "bitflags 2.9.0",
@@ -2632,6 +2634,7 @@ dependencies = [
 [[package]]
 name = "wgpu-core"
 version = "25.0.0"
+source = "git+https://github.com/n1ght-hunter/wgpu.git?rev=157c1c6#157c1c6aa58ae977c10ae1877e084e585a359ee4"
 dependencies = [
  "arrayvec",
  "bit-set 0.8.0",
@@ -2661,6 +2664,7 @@ dependencies = [
 [[package]]
 name = "wgpu-core-deps-apple"
 version = "25.0.0"
+source = "git+https://github.com/n1ght-hunter/wgpu.git?rev=157c1c6#157c1c6aa58ae977c10ae1877e084e585a359ee4"
 dependencies = [
  "wgpu-hal",
 ]
@@ -2668,6 +2672,7 @@ dependencies = [
 [[package]]
 name = "wgpu-core-deps-emscripten"
 version = "25.0.0"
+source = "git+https://github.com/n1ght-hunter/wgpu.git?rev=157c1c6#157c1c6aa58ae977c10ae1877e084e585a359ee4"
 dependencies = [
  "wgpu-hal",
 ]
@@ -2675,6 +2680,7 @@ dependencies = [
 [[package]]
 name = "wgpu-core-deps-windows-linux-android"
 version = "25.0.0"
+source = "git+https://github.com/n1ght-hunter/wgpu.git?rev=157c1c6#157c1c6aa58ae977c10ae1877e084e585a359ee4"
 dependencies = [
  "wgpu-hal",
 ]
@@ -2696,6 +2702,7 @@ dependencies = [
 [[package]]
 name = "wgpu-hal"
 version = "25.0.0"
+source = "git+https://github.com/n1ght-hunter/wgpu.git?rev=157c1c6#157c1c6aa58ae977c10ae1877e084e585a359ee4"
 dependencies = [
  "android_system_properties",
  "arrayvec",
@@ -2753,6 +2760,7 @@ dependencies = [
 [[package]]
 name = "wgpu-types"
 version = "25.0.0"
+source = "git+https://github.com/n1ght-hunter/wgpu.git?rev=157c1c6#157c1c6aa58ae977c10ae1877e084e585a359ee4"
 dependencies = [
  "bitflags 2.9.0",
  "bytemuck",
