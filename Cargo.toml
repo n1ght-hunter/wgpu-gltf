@@ -1,0 +1,27 @@
+[package]
+name = "wgpu-gltf"
+version = "0.1.0"
+edition = "2024"
+
+[workspace]
+
+
+[dependencies]
+bytemuck = { version = "1.22.0", features = ["derive"] }
+gltf = "1.4.1"
+tokio.workspace = true
+tracing = "0.1.41"
+tracing-subscriber = { version = "0.3.19", features = ["env-filter"] }
+# wgpu = "25.0.0"
+wgpu = { path = "../wgpu/wgpu" }
+winit.workspace = true
+
+
+[workspace.dependencies]
+windows = { version = "0.61", default-features = false }
+anyhow = "1"
+winit = { version = "0.30.9", features = ["android-native-activity"] }
+tokio = { version = "1.44.2", features = ["full"] }
+
+[build-dependencies]
+wgsl_bindgen = "0.18.1"
