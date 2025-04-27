@@ -1,4 +1,4 @@
-use std::{borrow::Cow, sync::Arc};
+use std::sync::Arc;
 
 use tokio::runtime::Runtime;
 use tracing_subscriber::EnvFilter;
@@ -7,7 +7,7 @@ use winit::{
     application::ApplicationHandler,
     event::WindowEvent,
     event_loop::{ActiveEventLoop, ControlFlow, EventLoop},
-    window::{Window, WindowId},
+    window::{Window, WindowAttributes, WindowId},
 };
 
 #[repr(C)]
@@ -33,7 +33,7 @@ impl VertexInput {
 }
 
 struct State {
-    window: Arc<Window>,
+    window: Arc<dyn Window>,
     device: wgpu::Device,
     queue: wgpu::Queue,
     size: winit::dpi::PhysicalSize<u32>,
@@ -41,12 +41,10 @@ struct State {
     surface_format: wgpu::TextureFormat,
     render_pipeline: wgpu::RenderPipeline,
     data_buffer: wgpu::Buffer,
-    depth_texture_format: wgpu::TextureFormat,
-    depth_texture: Option<wgpu::Texture>,
 }
 
 impl State {
-    async fn new(window: Arc<Window>) -> State {
+    async fn new(window: Arc<dyn Window>) -> State {
         let mut backend_options = wgpu::BackendOptions::default();
         backend_options.dx12.presentation_system = wgpu::wgt::Dx12PresentationSystem::Dcomp;
         let instance = wgpu::Instance::new(&wgpu::InstanceDescriptor {
@@ -103,19 +101,14 @@ impl State {
                 targets: &[Some(swapchain_format.into())],
             }),
             primitive: wgpu::PrimitiveState::default(),
-            depth_stencil: Some(wgpu::DepthStencilState {
-                format: depth_texture_format,
-                depth_write_enabled: true,
-                depth_compare: wgpu::CompareFunction::Less,
-                stencil: wgpu::StencilState::default(),
-                bias: wgpu::DepthBiasState::default(),
-            }),
+
+            depth_stencil: None,
             multisample: wgpu::MultisampleState::default(),
             multiview: None,
             cache: None,
         });
 
-        let size = window.inner_size();
+        let size = window.surface_size();
 
         let data_buf = device.create_buffer_init(&wgpu::util::BufferInitDescriptor {
             label: Some("Vertex Buffer"),
@@ -145,8 +138,6 @@ impl State {
             surface_format: swapchain_format,
             render_pipeline,
             data_buffer: data_buf,
-            depth_texture_format,
-            depth_texture: None,
         };
 
         // Configure surface for the first time
@@ -155,8 +146,8 @@ impl State {
         state
     }
 
-    fn get_window(&self) -> &Window {
-        &self.window
+    fn get_window(&self) -> &dyn Window {
+        self.window.as_ref()
     }
 
     fn configure_surface(&mut self) {
@@ -176,22 +167,6 @@ impl State {
                 present_mode: wgpu::PresentMode::AutoVsync,
             },
         );
-
-        let texture = self.device.create_texture(&wgpu::TextureDescriptor {
-            label: Some("Texture"),
-            size: wgpu::Extent3d {
-                width: self.size.width,
-                height: self.size.height,
-                depth_or_array_layers: 1,
-            },
-            mip_level_count: 1,
-            sample_count: 1,
-            dimension: wgpu::TextureDimension::D2,
-            format: self.depth_texture_format,
-            usage: wgpu::TextureUsages::RENDER_ATTACHMENT,
-            view_formats: &[],
-        });
-        self.depth_texture = Some(texture);
     }
 
     fn resize(&mut self, new_size: winit::dpi::PhysicalSize<u32>) {
@@ -230,23 +205,7 @@ impl State {
                         store: wgpu::StoreOp::Store,
                     },
                 })],
-                depth_stencil_attachment: Some(wgpu::RenderPassDepthStencilAttachment {
-                    view: &self
-                        .depth_texture
-                        .as_ref()
-                        .unwrap()
-                        .create_view(&Default::default()),
-                    depth_ops: Some(wgpu::Operations {
-                        load: wgpu::LoadOp::Clear(1.0),
-                        store: wgpu::StoreOp::Store,
-                    }),
-                    stencil_ops: Some(wgpu::Operations {
-                        load: wgpu::LoadOp::Clear(0),
-                        store: wgpu::StoreOp::Store,
-                    }),
-                }),
-                timestamp_writes: None,
-                occlusion_query_set: None,
+                ..Default::default()
             });
 
             renderpass.set_pipeline(&self.render_pipeline);
@@ -280,26 +239,30 @@ impl Default for App {
 
 enum Event {}
 
-impl ApplicationHandler<Event> for App {
-    fn resumed(&mut self, event_loop: &ActiveEventLoop) {
+impl ApplicationHandler for App {
+    fn can_create_surfaces(&mut self, event_loop: &dyn ActiveEventLoop) {
         // Create window object
-        let window = Arc::new(
+        let window: Arc<dyn Window> = Arc::from(
             event_loop
                 .create_window(
-                    Window::default_attributes()
+                    WindowAttributes::default()
                         .with_transparent(true)
                         .with_title("WGPU Window"),
                 )
                 .unwrap(),
         );
-
         let state = self.runtime.block_on(State::new(window.clone()));
         self.state = Some(state);
 
         window.request_redraw();
     }
 
-    fn window_event(&mut self, event_loop: &ActiveEventLoop, _id: WindowId, event: WindowEvent) {
+    fn window_event(
+        &mut self,
+        event_loop: &dyn ActiveEventLoop,
+        _id: WindowId,
+        event: WindowEvent,
+    ) {
         let state = self.state.as_mut().unwrap();
         match event {
             WindowEvent::CloseRequested => {
@@ -311,11 +274,11 @@ impl ApplicationHandler<Event> for App {
                 // Emits a new redraw requested event.
                 state.get_window().request_redraw();
             }
-            WindowEvent::Resized(size) => {
+            WindowEvent::SurfaceResized(size) => {
                 println!("Window resized to {:?}", size);
                 // Reconfigures the size of the surface. We do not re-render
                 // here as this event is always followed up by redraw request.
-                // state.resize(size);
+                state.resize(size);
             }
             _ => (),
         }
@@ -332,7 +295,7 @@ fn main() {
         .with_file(true)
         .init();
 
-    let event_loop = EventLoop::<Event>::with_user_event().build().unwrap();
+    let event_loop = EventLoop::new().unwrap();
 
     // When the current loop iteration finishes, immediately begin a new
     // iteration regardless of whether or not new events are available to

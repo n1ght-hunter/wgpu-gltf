@@ -13,15 +13,16 @@ tokio.workspace = true
 tracing = "0.1.41"
 tracing-subscriber = { version = "0.3.19", features = ["env-filter"] }
 # wgpu = "25.0.0"
-wgpu = {git = "https://github.com/n1ght-hunter/wgpu.git", rev = "157c1c6"}
-# wgpu = { path = "../wgpu/wgpu" }
+# wgpu = {git = "https://github.com/n1ght-hunter/wgpu.git", rev = "157c1c6"}
+wgpu = { path = "../wgpu/wgpu" }
 winit.workspace = true
 
 
 [workspace.dependencies]
 windows = { version = "0.61", default-features = false }
 anyhow = "1"
-winit = { version = "0.30.9", features = ["android-native-activity"] }
+# winit = { version = "0.30.9", features = ["android-native-activity"] }
+winit = {path = "../winit"}
 tokio = { version = "1.44.2", features = ["full"] }
 
 [build-dependencies]
