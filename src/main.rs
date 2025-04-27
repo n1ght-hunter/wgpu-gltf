@@ -1,4 +1,4 @@
-use std::sync::Arc;
+use std::{borrow::Cow, sync::Arc};
 
 use tokio::runtime::Runtime;
 use tracing_subscriber::EnvFilter;
@@ -41,6 +41,8 @@ struct State {
     surface_format: wgpu::TextureFormat,
     render_pipeline: wgpu::RenderPipeline,
     data_buffer: wgpu::Buffer,
+    depth_texture_format: wgpu::TextureFormat,
+    depth_texture: Option<wgpu::Texture>,
 }
 
 impl State {
@@ -101,8 +103,14 @@ impl State {
                 targets: &[Some(swapchain_format.into())],
             }),
             primitive: wgpu::PrimitiveState::default(),
-
-            depth_stencil: None,
+            depth_stencil: Some(wgpu::DepthStencilState {
+                format: depth_texture_format,
+                depth_write_enabled: true,
+                depth_compare: wgpu::CompareFunction::Less,
+                stencil: wgpu::StencilState::default(),
+                bias: wgpu::DepthBiasState::default(),
+            }),
+            // depth_stencil: None,
             multisample: wgpu::MultisampleState::default(),
             multiview: None,
             cache: None,
@@ -138,6 +146,8 @@ impl State {
             surface_format: swapchain_format,
             render_pipeline,
             data_buffer: data_buf,
+            depth_texture_format,
+            depth_texture: None,
         };
 
         // Configure surface for the first time
@@ -167,6 +177,22 @@ impl State {
                 present_mode: wgpu::PresentMode::AutoVsync,
             },
         );
+
+        let texture = self.device.create_texture(&wgpu::TextureDescriptor {
+            label: Some("Texture"),
+            size: wgpu::Extent3d {
+                width: self.size.width,
+                height: self.size.height,
+                depth_or_array_layers: 1,
+            },
+            mip_level_count: 1,
+            sample_count: 1,
+            dimension: wgpu::TextureDimension::D2,
+            format: self.depth_texture_format,
+            usage: wgpu::TextureUsages::RENDER_ATTACHMENT,
+            view_formats: &[],
+        });
+        self.depth_texture = Some(texture);
     }
 
     fn resize(&mut self, new_size: winit::dpi::PhysicalSize<u32>) {
@@ -201,10 +227,32 @@ impl State {
                     view: &texture_view,
                     resolve_target: None,
                     ops: wgpu::Operations {
-                        load: wgpu::LoadOp::Clear(wgpu::Color::TRANSPARENT),
+                        load: wgpu::LoadOp::Clear(wgpu::Color {
+                            r: 0.3,
+                            g: 0.3,
+                            b: 0.3,
+                            a: 1.0,
+                        }),
                         store: wgpu::StoreOp::Store,
                     },
                 })],
+                depth_stencil_attachment: Some(wgpu::RenderPassDepthStencilAttachment {
+                    view: &self
+                        .depth_texture
+                        .as_ref()
+                        .unwrap()
+                        .create_view(&Default::default()),
+                    depth_ops: Some(wgpu::Operations {
+                        load: wgpu::LoadOp::Clear(1.0),
+                        store: wgpu::StoreOp::Store,
+                    }),
+                    stencil_ops: Some(wgpu::Operations {
+                        load: wgpu::LoadOp::Clear(0),
+                        store: wgpu::StoreOp::Store,
+                    }),
+                }),
+                // timestamp_writes: None,
+                // occlusion_query_set: None,
                 ..Default::default()
             });
 
